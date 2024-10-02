@@ -1,4 +1,5 @@
 ﻿using domain.Interfaces;
+using System.Security.Cryptography.Xml;
 using System.Text.Json;
 
 namespace domain.Services
@@ -14,14 +15,14 @@ namespace domain.Services
             _filePath = Path.Combine(fileService.AppDataDirectory, "settings.json");
         }
 
-        public T? GetItem<T>(string key)
+        public async Task<T?> GetItem<T>(string key)
         {
             try
             {
                 if (!File.Exists(_filePath))
                     return default;
 
-                var json = File.ReadAllText(_filePath);
+                var json = await File.ReadAllTextAsync(_filePath);
                 var settings = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
 
                 if (settings != null && settings.TryGetValue(key, out var value))
@@ -38,7 +39,7 @@ namespace domain.Services
             }
         }
 
-        public void SetItem<T>(string key, T value)
+        public async Task SetItem<T>(string key, T value)
         {
             try
             {
@@ -46,7 +47,7 @@ namespace domain.Services
 
                 if (File.Exists(_filePath))
                 {
-                    var json = File.ReadAllText(_filePath);
+                    var json = await File.ReadAllTextAsync(_filePath);
                     settings = JsonSerializer.Deserialize<Dictionary<string, string>>(json) ?? new Dictionary<string, string>();
                 }
                 else
@@ -64,14 +65,14 @@ namespace domain.Services
             }
         }
 
-        public void RemoveItem(string key)
+        public async Task RemoveItem(string key)
         {
             try
             {
                 if (!File.Exists(_filePath))
                     return;
 
-                var json = File.ReadAllText(_filePath);
+                var json = await File.ReadAllTextAsync(_filePath);
                 var settings = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
 
                 if (settings != null && settings.Remove(key))

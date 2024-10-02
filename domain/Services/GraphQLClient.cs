@@ -15,6 +15,7 @@ namespace chldr_utils.Services
         private readonly GraphQLHttpClient _graphQLClient;
         private readonly IExceptionHandler _exceptionHandler;
         private readonly ISettingsService _localStorageService;
+        private bool _isClientConfigured;
 
         public GraphQLClient(
             IExceptionHandler exceptionHandler,
@@ -27,18 +28,29 @@ namespace chldr_utils.Services
             _graphQLClient = new GraphQLHttpClient($"{apiHost}/v2/graphql", new NewtonsoftJsonSerializer());
             _exceptionHandler = exceptionHandler;
             _localStorageService = localStorageService;
+        }
 
-            var session = _localStorageService.GetItem<SessionInformation>("session");
+        private async Task ConfigureClient()
+        {
+            if (_isClientConfigured == true)
+            {
+                return;
+            }
+
+            var session = await _localStorageService.GetItem<SessionInformation>("session");
             if (session != null && !string.IsNullOrEmpty(session.AccessToken))
             {
                 _graphQLClient.HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", session.AccessToken);
             }
 
             _graphQLClient.HttpClient.DefaultRequestHeaders.Add("ApiKey", "Whatever");
+
+            _isClientConfigured = true;
         }
 
         public async Task<GraphQLResponse<T>> SendRequestAsync<T>(GraphQLRequest request, string mutation)
         {
+            await ConfigureClient();
             try
             {
                 var response = await _graphQLClient.SendMutationAsync<JObject>(request);
