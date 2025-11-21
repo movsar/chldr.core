@@ -16,7 +16,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\..\chldr.api\api_server\api_server.csproj" />
+	  <ProjectReference Include="..\..\chldr.api\api.web\api.web.csproj" />
 	</ItemGroup>
 
 </Project>

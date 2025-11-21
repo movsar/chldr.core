@@ -23,6 +23,7 @@ using domain.DatabaseObjects.Dtos;
 using sql_dl.SqlEntities;
 using sql_dl.Services;
 using sql_dl;
+using core.domain.Resources.Localizations;
 
 namespace chldr_test_utils
 {

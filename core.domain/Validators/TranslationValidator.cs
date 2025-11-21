@@ -1,4 +1,5 @@
-﻿using domain.DatabaseObjects.Dtos;
+﻿using core.domain.Resources.Localizations;
+using domain.DatabaseObjects.Dtos;
 using domain.Resources.Localizations;
 using domain.Resources.Localizations;
 using FluentValidation;

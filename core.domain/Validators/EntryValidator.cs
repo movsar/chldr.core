@@ -4,6 +4,7 @@ using domain.Resources.Localizations;
 using FluentValidation;
 using Microsoft.Extensions.Localization;
 using domain.Resources.Localizations;
+using core.domain.Resources.Localizations;
 
 namespace chldr_shared.Validators
 {
