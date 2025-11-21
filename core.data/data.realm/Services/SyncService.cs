@@ -8,7 +8,6 @@ using System.Diagnostics;
 using domain.DatabaseObjects.Models;
 using realm_dl.Interfaces;
 using domain.Interfaces;
-using domain;
 using domain.Enums;
 
 namespace realm_dl.Services
@@ -20,13 +19,13 @@ namespace realm_dl.Services
         private Timer _timer;
 
         private readonly SemaphoreSlim _syncLock = new SemaphoreSlim(1);
+
         public SyncService(IRequestService requestService, IFileService fileService)
         {
             _requestService = requestService;
             _fileService = fileService;
-
-            BeginListening();
         }
+
         private void SetPropertyValue(object obj, string propertyName, object value)
         {
             var propertyInfo = obj.GetType().GetProperty(propertyName);
@@ -65,13 +64,10 @@ namespace realm_dl.Services
             return combinedResults;
         }
 
-        private async Task PullRemoteDatabase()
+        public async Task PullRemoteDatabase(string filePath)
         {
-            // Remove existing database
-            _dbContext.Write(() =>
-            {
-                _dbContext.RemoveAll();
-            });
+            File.Delete(filePath);
+            var realm = Realm.GetInstance(filePath);
 
             var sw = Stopwatch.StartNew();
 
@@ -84,47 +80,47 @@ namespace realm_dl.Services
             var downloadedIn = sw.ElapsedMilliseconds;
             sw.Restart();
 
-            _dbContext.Write(() =>
+            realm.Write(() =>
             {
                 foreach (var user in users)
                 {
-                    _dbContext.Add(RealmUser.FromModel(user));
+                    realm.Add(RealmUser.FromModel(user));
                 }
 
                 foreach (var source in sources)
                 {
-                    _dbContext.Add(RealmSource.FromModel(source));
+                    realm.Add(RealmSource.FromModel(source));
                 }
 
                 foreach (var entry in entries)
                 {
-                    var user = _dbContext.Find<RealmUser>(entry.UserId);
+                    var user = realm.Find<RealmUser>(entry.UserId);
 
-                    if (_dbContext.Find<RealmEntry>(entry.EntryId) != null)
+                    if (realm.Find<RealmEntry>(entry.EntryId) != null)
                     {
                         continue;
                     }
 
-                    _dbContext.Add(RealmEntry.FromModel(entry, _dbContext));
+                    realm.Add(RealmEntry.FromModel(entry, realm));
                 }
 
                 foreach (var changeSet in changeSets)
                 {
-                    _dbContext.Add(RealmChangeSet.FromModel(changeSet));
+                    realm.Add(RealmChangeSet.FromModel(changeSet));
                 }
             });
 
-            var entry = _dbContext.All<RealmEntry>().ToList()[0];
+            var entry = realm.All<RealmEntry>().ToList()[0];
             var entryModels = EntryModel.FromEntity(entry, entry.Translations, entry.Sounds);
 
             Realm.Compact(RealmDataProvider.OfflineDatabaseConfiguration);
-            _dbContext.WriteCopy(new RealmConfiguration(_fileService.DatabaseFilePath + ".new"));
+            //_dbContext.WriteCopy(new RealmConfiguration(_fileService.DatabaseFilePath + ".new"));
 
             sw.Stop();
             var savedIn = sw.ElapsedMilliseconds;
         }
 
-        public  async Task Sync()
+        public async Task Sync()
         {
             if (_isRunning || !_requestService.IsNetworUp)
             {
@@ -168,7 +164,7 @@ namespace realm_dl.Services
                 // If more than 1000 changes have been made - just perform hard reset
                 if ((latestRemoteChangeSet.ChangeSetIndex - latestlocalChangeSetIndex) > Constants.ChangeSetsToApply)
                 {
-                    await PullRemoteDatabase();
+                    //await PullRemoteDatabase();
                     return;
                 }
                 else
@@ -246,7 +242,6 @@ namespace realm_dl.Services
                     break;
             }
         }
-
         private void ApplyChangesForType<T>(string entityId, IEnumerable<Change> changes) where T : RealmObject
         {
             var realmWord = _dbContext.Find<T>(entityId);
@@ -255,7 +250,6 @@ namespace realm_dl.Services
                 SetPropertyValue(realmWord, change.Property, change.NewValue);
             }
         }
-
         internal void BeginListening()
         {
             _timer = new Timer(async state => await Sync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(10));
