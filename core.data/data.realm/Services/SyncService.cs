@@ -73,11 +73,15 @@ namespace realm_dl.Services
 
             // Get users
             var users = await RetrieveAll<UserModel>(RecordType.User);
+            Debug.WriteLine("Users retrieved: " + users.Count);
             var sources = await RetrieveAll<SourceModel>(RecordType.Source);
+            Debug.WriteLine("Sources retrieved: " + sources.Count);
             var entries = await RetrieveAll<EntryModel>(RecordType.Entry);
+            Debug.WriteLine("Entries retrieved: " + entries.Count);
             var changeSets = await RetrieveAll<ChangeSetModel>(RecordType.ChangeSet);
 
             var downloadedIn = sw.ElapsedMilliseconds;
+            Debug.WriteLine($"Downloaded in {downloadedIn} ms");
             sw.Restart();
 
             realm.Write(() =>
@@ -118,6 +122,7 @@ namespace realm_dl.Services
 
             sw.Stop();
             var savedIn = sw.ElapsedMilliseconds;
+            Debug.WriteLine($"Saved in {savedIn} ms");
         }
 
         public async Task Sync()
